@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+<meta charset="UTF-8" />
+<title>index.html</title>
+</head>
+<body>
+	<div sec:authorize="isAnonymous()">
+		<h1>isAnonymous</h1>
+		<a th:href="@{/index}">/index</a>
+	</div>
+	<div sec:authorize="isAuthenticated()">
+		<h1>isAuthenticated</h1>
+		<a th:href="@{/user_info}">/user_info</a>
+		<form th:action="@{/logout}" method="post">
+			<input type="submit" value="Logout" />
+		</form>
+		
+		<h6>authorities:</h6>
+		<ul th:each="item : ${#authentication.authorities}">
+			<li th:text="${item.authority}"></li>
+		</ul>
+		
+		<h6>hasRole:</h6>
+		<span sec:authorize="hasRole('ROLE_ADMIN')">[ROLE_ADMIN]</span>
+		<span sec:authorize="hasRole('ROLE_STAFF')">[ROLE_STAFF]</span>
+		<span sec:authorize="hasRole('ROLE_USER')">[ROLE_USER]</span>
+		
+		<dl>
+			<dt>name:</dt>
+			<dd sec:authentication="name" />
+			<dt>principal:</dt>
+			<dd sec:authentication="principal" />
+			<dt>credentials:</dt>
+			<dd sec:authentication="credentials" />
+			<dt>authorities:</dt>
+			<dd sec:authentication="authorities" />
+			<dt>details:</dt>
+			<dd sec:authentication="details" />
+			<dt>details.remoteAddress:</dt>
+			<dd sec:authentication="details.remoteAddress" />
+			<dt>details.sessionId:</dt>
+			<dd sec:authentication="details.sessionId" />
+			<dt>details.tokenType:</dt>
+			<dd sec:authentication="details.tokenType" />
+			<dt>details.tokenValue:</dt>
+			<dd sec:authentication="details.tokenValue" />
+		</dl>
+		
+		<h6>api:</h6>
+		<ul>
+			<li><a th:href="@{/api/uaa/user_info}">/api/uaa/user_info</a></li>
+			<li><a th:href="@{/api/resc/user_info}">/api/resc/user_info</a></li>
+			<li><a th:href="@{/api/uaa/role/user}">/api/uaa/role/user</a></li>
+			<li><a th:href="@{/api/uaa/role/admin}">/api/uaa/role/admin</a></li>
+		</ul>
+	</div>
+</body>
+</html>
