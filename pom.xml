@@ -18,6 +18,9 @@
 	
 	<modules>
 		<module>eureka-server</module>
+		<module>oauth2-server</module>
+		<module>oauth2-resource</module>
+		<module>oauth2-client</module>
 	</modules>
 
 	<properties>
