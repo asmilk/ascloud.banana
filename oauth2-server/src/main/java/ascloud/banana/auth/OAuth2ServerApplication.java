@@ -6,6 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.netflix.eureka.EnableEurekaClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -27,6 +28,7 @@ import org.springframework.security.oauth2.config.annotation.web.configuration.R
 import org.springframework.security.oauth2.config.annotation.web.configurers.AuthorizationServerEndpointsConfigurer;
 import org.springframework.security.oauth2.config.annotation.web.configurers.AuthorizationServerSecurityConfigurer;
 import org.springframework.security.oauth2.provider.expression.OAuth2WebSecurityExpressionHandler;
+import org.springframework.security.oauth2.provider.token.store.redis.RedisTokenStore;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -91,10 +93,14 @@ public class OAuth2ServerApplication {
 		@Autowired
 		private PasswordEncoder passwordEncoder;
 
+		@Autowired
+		private RedisConnectionFactory redisConnectionFactory;
+
 		@Override
 		public void configure(AuthorizationServerEndpointsConfigurer endpoints) throws Exception {
 			endpoints//
-					.authenticationManager(this.authenticationManager).userDetailsService(this.userDetailsService);
+					.authenticationManager(this.authenticationManager).userDetailsService(this.userDetailsService)
+					.tokenStore(new RedisTokenStore(this.redisConnectionFactory));
 		}
 
 		@Override
@@ -107,9 +113,11 @@ public class OAuth2ServerApplication {
 		@Override
 		public void configure(ClientDetailsServiceConfigurer clients) throws Exception {
 			clients//
-					.inMemory().withClient("uaa").secret("{noop}s3cr3t").scopes("all")
+					.inMemory()//
+					.withClient("uaa").secret("{noop}s3cr3t").scopes("all")
 					.authorizedGrantTypes("authorization_code", "password", "refresh_token").autoApprove(true)
-					.accessTokenValiditySeconds(300).refreshTokenValiditySeconds(600);
+					.accessTokenValiditySeconds(300).refreshTokenValiditySeconds(600)
+					.redirectUris("http://oauth2.client:8080/login", "http://oauth2.client:8080/logout", "http://oauth2.com/login/oauth2/code/uaa");
 		}
 
 	}
@@ -119,8 +127,8 @@ public class OAuth2ServerApplication {
 	static class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
 		private static final String REMEMBER_ME_KEY = "ascloudAppleOauth2Server";
-		private static final String LOGIN_PAGE = "/oauth/login";
-		private static final String LOGOUT_PAGE = "/oauth/logout";
+		private static final String URL_LOGIN = "/oauth/login";
+		private static final String URL_LOGOUT = "/oauth/logout";
 
 		@Autowired
 		private UserDetailsService userDetailsService;
@@ -130,6 +138,9 @@ public class OAuth2ServerApplication {
 
 		@Autowired
 		private OAuth2LogoutSuccessHandler oAuth2LogoutSuccessHandler;
+		
+//		@Autowired
+//		private OAuth2LogoutHandler oAuth2LogoutHandler;
 
 		@Autowired
 		private RoleHierarchy roleHierarchy;
@@ -156,17 +167,18 @@ public class OAuth2ServerApplication {
 
 			FormLoginFilter formLoginFilter = new FormLoginFilter();
 			formLoginFilter.setAuthenticationManager(super.authenticationManagerBean());
-			formLoginFilter.setRequiresAuthenticationRequestMatcher(new AntPathRequestMatcher(LOGIN_PAGE, "POST"));
-			formLoginFilter.setAuthenticationFailureHandler(new SimpleUrlAuthenticationFailureHandler(LOGIN_PAGE));
+			formLoginFilter.setRequiresAuthenticationRequestMatcher(new AntPathRequestMatcher(URL_LOGIN, "POST"));
+			formLoginFilter.setAuthenticationFailureHandler(new SimpleUrlAuthenticationFailureHandler(URL_LOGIN));
 			formLoginFilter.setRememberMeServices(rememberMeServices);
 
 			http//
 					.antMatcher("/oauth/**").authorizeRequests().anyRequest().authenticated().and()//
-					.formLogin().loginPage(LOGIN_PAGE).permitAll().and()//
+					.formLogin().loginPage(URL_LOGIN).permitAll().and()//
 					.addFilterBefore(formLoginFilter, UsernamePasswordAuthenticationFilter.class)//
-					.csrf().ignoringAntMatchers(LOGIN_PAGE).and()//
+					.csrf().ignoringAntMatchers(URL_LOGIN).and()//
 					.rememberMe().rememberMeServices(rememberMeServices).and()//
-					.logout().logoutRequestMatcher(new AntPathRequestMatcher(LOGOUT_PAGE))
+					.logout().logoutRequestMatcher(new AntPathRequestMatcher(URL_LOGOUT))
+//					.addLogoutHandler(this.oAuth2LogoutHandler)
 					.logoutSuccessHandler(this.oAuth2LogoutSuccessHandler);
 		}
 
