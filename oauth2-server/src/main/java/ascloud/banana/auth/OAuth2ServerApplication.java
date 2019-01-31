@@ -117,7 +117,7 @@ public class OAuth2ServerApplication {
 					.withClient("uaa").secret("{noop}s3cr3t").scopes("all")
 					.authorizedGrantTypes("authorization_code", "password", "refresh_token").autoApprove(true)
 					.accessTokenValiditySeconds(300).refreshTokenValiditySeconds(600)
-					.redirectUris("http://oauth2.client:8080/login", "http://oauth2.client:8080/logout", "http://oauth2.com/login/oauth2/code/uaa");
+					.redirectUris("http://oauth2.client:8080/login", "http://oauth2.com/login/oauth2/code/uaa");
 		}
 
 	}
@@ -186,7 +186,7 @@ public class OAuth2ServerApplication {
 		public void configure(WebSecurity web) throws Exception {
 			OAuth2WebSecurityExpressionHandler expressionHandler = new OAuth2WebSecurityExpressionHandler();
 			expressionHandler.setRoleHierarchy(this.roleHierarchy);
-			web.expressionHandler(expressionHandler).ignoring().antMatchers("/actuator/**", "/favicon.ico");
+			web.expressionHandler(expressionHandler).ignoring().antMatchers("/user/**", "/actuator/**", "/favicon.ico");
 		}
 
 	}
